@@ -369,8 +369,6 @@ main() {
             echo ""
             echo "Зашифрованный:"
             format_output "$processed"
-            echo ""
-            echo "Расшифрованный:"
             restore_text "$decrypted"
         fi
 
