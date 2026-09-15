@@ -101,7 +101,8 @@ encrypt_trithemius() {
     for ((i=0; i<len; i++)); do
         local ch="${text:$i:1}"
         local idx=$(get_idx "$ch")
-        local new_idx=$(( (idx + i) % ALPHA_LEN ))
+        local shift=$(( i % ALPHA_LEN ))
+        local new_idx=$(( (idx + shift) % ALPHA_LEN ))
         result+=$(get_char $new_idx)
     done
     echo "$result"
@@ -114,7 +115,8 @@ decrypt_trithemius() {
     for ((i=0; i<len; i++)); do
         local ch="${text:$i:1}"
         local idx=$(get_idx "$ch")
-        local new_idx=$(( (idx - i + ALPHA_LEN) % ALPHA_LEN ))
+        local shift=$(( i % ALPHA_LEN ))
+        local new_idx=$(( (idx - shift + ALPHA_LEN) % ALPHA_LEN ))
         result+=$(get_char $new_idx)
     done
     echo "$result"
