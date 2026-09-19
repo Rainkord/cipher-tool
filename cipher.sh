@@ -101,8 +101,7 @@ encrypt_trithemius() {
     for ((i=0; i<len; i++)); do
         local ch="${text:$i:1}"
         local idx=$(get_idx "$ch")
-        local shift=$(( i % ALPHA_LEN ))
-        local new_idx=$(( (idx + shift) % ALPHA_LEN ))
+        local new_idx=$(( (idx + i) % ALPHA_LEN ))
         result+=$(get_char $new_idx)
     done
     echo "$result"
@@ -115,8 +114,7 @@ decrypt_trithemius() {
     for ((i=0; i<len; i++)); do
         local ch="${text:$i:1}"
         local idx=$(get_idx "$ch")
-        local shift=$(( i % ALPHA_LEN ))
-        local new_idx=$(( (idx - shift + ALPHA_LEN) % ALPHA_LEN ))
+        local new_idx=$(( (idx - i + ALPHA_LEN) % ALPHA_LEN ))
         result+=$(get_char $new_idx)
     done
     echo "$result"
@@ -159,16 +157,17 @@ decrypt_belaso() {
 encrypt_vigenere_selfkey() {
     local text="$1"
     local key="$2"
+    local key_len=${#key}
     local text_len=${#text}
     local result=""
     for ((i=0; i<text_len; i++)); do
         local ch="${text:$i:1}"
         local idx=$(get_idx "$ch")
         local key_ch=""
-        if [[ $i -eq 0 ]]; then
-            key_ch="$key"
+        if [[ $i -lt $key_len ]]; then
+            key_ch="${key:$i:1}"
         else
-            key_ch="${text:$((i-1)):1}"
+            key_ch="${text:$((i - key_len)):1}"
         fi
         local key_idx=$(get_idx "$key_ch")
         local new_idx=$(( (idx + key_idx) % ALPHA_LEN ))
@@ -180,16 +179,17 @@ encrypt_vigenere_selfkey() {
 decrypt_vigenere_selfkey() {
     local text="$1"
     local key="$2"
+    local key_len=${#key}
     local text_len=${#text}
     local result=""
     for ((i=0; i<text_len; i++)); do
         local ch="${text:$i:1}"
         local idx=$(get_idx "$ch")
         local key_ch=""
-        if [[ $i -eq 0 ]]; then
-            key_ch="$key"
+        if [[ $i -lt $key_len ]]; then
+            key_ch="${key:$i:1}"
         else
-            key_ch="${result:$((i-1)):1}"
+            key_ch="${result:$((i - key_len)):1}"
         fi
         local key_idx=$(get_idx "$key_ch")
         local new_idx=$(( (idx - key_idx + ALPHA_LEN) % ALPHA_LEN ))
@@ -317,19 +317,21 @@ main() {
             done
         elif [[ "$method" == "4" ]]; then
             while [[ -z "$key" ]]; do
-                read -p "Введите букву-ключ (одна буква): " key
+                read -p "Введите ключ: " key
                 clear_screen
                 if [[ -z "$key" ]]; then
                     echo "Ошибка: ключ не может быть пустым"
-                elif [[ ${#key} -ne 1 ]]; then
-                    echo "Ошибка: ключ должен быть одной буквой"
-                    key=""
-                else
-                    key=$(to_upper "$key")
-                    if [[ -z "${CHAR_TO_IDX[$key]+x}" ]]; then
-                        echo "Ошибка: недопустимая буква"
-                        key=""
-                    fi
+                fi
+            done
+            key=$(preprocess "$key")
+            for ((i=0; i<${#key}; i++)); do
+                ch="${key:$i:1}"
+                if [[ -z "${CHAR_TO_IDX[$ch]+x}" ]]; then
+                    echo "Ошибка: ключ содержит недопустимые символы"
+                    echo ""
+                    read -p "Нажмите Enter для продолжения..."
+                    clear_screen
+                    continue 2
                 fi
             done
         fi
@@ -371,7 +373,9 @@ main() {
             echo ""
             echo "Зашифрованный:"
             format_output "$processed"
-            format_output "$decrypted"
+            echo ""
+            echo "Расшифрованный:"
+            restore_text "$decrypted"
         fi
 
         echo ""
